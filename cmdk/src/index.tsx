@@ -467,23 +467,32 @@ const Command = React.forwardRef<HTMLDivElement, CommandProps>((props, forwarded
   }
 
   function scrollSelectedIntoView() {
+    const scrollable = getListScrollable()
     const item = getSelectedItem()
+    if (!scrollable || !item) return
 
-    if (item) {
-      if (item.parentElement?.firstChild === item) {
-        // First item in Group, ensure heading is in view
-        item.closest(GROUP_SELECTOR)?.querySelector(GROUP_HEADING_SELECTOR)?.scrollIntoView({ block: 'nearest' })
-      }
+    console.log(`scrolling`, item.innerText);
 
-      // Ensure the item is always in view
-      item.scrollIntoView({ block: 'nearest' })
+    const minVisibleY = scrollable.scrollTop
+    const maxVisibleY = scrollable.scrollTop + scrollable.clientHeight
+    const itemTop = item.offsetTop
+    const itemBottom = item.offsetTop + item.clientHeight
+
+    if (itemTop < minVisibleY) {
+      scrollable.scrollTop = itemTop
+    } else if (itemBottom > maxVisibleY) {
+      scrollable.scrollTop = itemBottom - scrollable.clientHeight
     }
   }
 
   /** Getters */
 
+  function getListScrollable() {
+    return listInnerRef.current?.parentElement
+  }
+
   function getSelectedItem() {
-    return listInnerRef.current?.querySelector(`${ITEM_SELECTOR}[aria-selected="true"]`)
+    return listInnerRef.current?.querySelector(`${ITEM_SELECTOR}[aria-selected="true"]`) as HTMLElement
   }
 
   function getValidItems() {
@@ -865,6 +874,7 @@ const List = React.forwardRef<HTMLDivElement, ListProps>((props, forwardedRef) =
       role="listbox"
       aria-label={label}
       id={context.listId}
+      style={{ position: "relative" }}
     >
       {SlottableWithNestedChildren(props, (child) => (
         <div ref={mergeRefs([height, context.listInnerRef])} cmdk-list-sizer="">
